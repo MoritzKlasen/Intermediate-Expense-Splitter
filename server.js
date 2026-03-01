@@ -2,10 +2,17 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use(express.static('public'));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// In production, serve the React build
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'build')));
+}
 
 let expenses = [];
 let participants = [];
@@ -36,7 +43,7 @@ app.delete('/api/participants/:name', (req, res) => {
 });
 
 app.post('/api/expenses', (req, res) => {
-  const { description, amount, paidBy, splitAmong } = req.body;
+  const { description, amount, paidBy, splitAmong, category, date } = req.body;
   
   if (!description || !amount || !paidBy || !splitAmong || splitAmong.length === 0) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -48,7 +55,9 @@ app.post('/api/expenses', (req, res) => {
     amount: parseFloat(amount),
     paidBy,
     splitAmong,
-    date: new Date().toISOString()
+    category: category || 'other',
+    date: date || new Date().toISOString(),
+    createdAt: new Date().toISOString()
   };
   
   expenses.push(expense);
